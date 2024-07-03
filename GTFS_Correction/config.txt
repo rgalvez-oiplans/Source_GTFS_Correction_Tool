@@ -1,0 +1,3 @@
+DatabasePath=GTFSToolDB.sqlite
+zipfilename = BCTGTFS.zip
+feed_contact_email=cservice@broward.org

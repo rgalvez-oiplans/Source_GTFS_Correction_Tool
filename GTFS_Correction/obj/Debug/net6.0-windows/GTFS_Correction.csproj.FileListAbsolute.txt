@@ -1,0 +1,2 @@
+C:\Users\rgalv\source\repos\GTFS_Correction\GTFS_Correction\obj\Debug\net6.0-windows\GTFS_Correction.csproj.AssemblyReference.cache
+C:\Users\rgalv\source\repos\GTFS_Correction\GTFS_Correction\obj\Debug\net6.0-windows\GTFS_Correction.csproj.GenerateResource.cache
