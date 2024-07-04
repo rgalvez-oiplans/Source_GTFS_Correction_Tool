@@ -4,6 +4,7 @@
     <TargetFramework>net481</TargetFramework>
     <UseWPF>false</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
+    <Company>Open Innovation Plans, LLC</Company>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="DotSpatial.Data" Version="3.0.1" />
