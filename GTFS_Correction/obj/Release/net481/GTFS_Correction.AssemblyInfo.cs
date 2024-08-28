@@ -11,10 +11,10 @@
 using System;
 using System.Reflection;
 
-[assembly: System.Reflection.AssemblyCompanyAttribute("GTFS_Correction")]
+[assembly: System.Reflection.AssemblyCompanyAttribute("Open Innovation Plans, LLC")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+06b8ea0bf683584e175e0fbb34256ef855b37103")]
 [assembly: System.Reflection.AssemblyProductAttribute("GTFS_Correction")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GTFS_Correction")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -8,6 +8,6 @@ build_property.PlatformNeutralAssembly =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = GTFS_Import
-build_property.ProjectDir = C:\Users\rgalv\Source\Repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Import\
+build_property.ProjectDir = C:\Users\rgalv\source\repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Import\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
