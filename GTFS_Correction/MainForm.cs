@@ -413,6 +413,16 @@ namespace GTFS_Correction
             return discrepancies;
 
         }
+
+        private void btnMergeGTFS_Click(object sender, EventArgs e)
+        { 
+            // Create a new instance of frmMergeGTFS
+            frmMergeGTFS mergeForm = new frmMergeGTFS();
+
+            // Show the form
+            mergeForm.ShowDialog();  // Or use mergeForm.Show() if you don't want it to be modal
+
+        }
     }
 }
 

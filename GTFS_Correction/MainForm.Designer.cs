@@ -20,6 +20,7 @@ namespace GTFS_Correction
             this.btnValidate = new System.Windows.Forms.Button();
             this.lstStatus = new System.Windows.Forms.ListBox();
             this.txtLog = new System.Windows.Forms.TextBox();
+            this.btnMergeGTFS = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // btnUploadGTFS
@@ -34,6 +35,7 @@ namespace GTFS_Correction
             // 
             // btnUploadShapefile
             // 
+            this.btnUploadShapefile.Enabled = false;
             this.btnUploadShapefile.Location = new System.Drawing.Point(12, 41);
             this.btnUploadShapefile.Name = "btnUploadShapefile";
             this.btnUploadShapefile.Size = new System.Drawing.Size(100, 23);
@@ -41,7 +43,6 @@ namespace GTFS_Correction
             this.btnUploadShapefile.Text = "Upload Shapefile";
             this.btnUploadShapefile.UseVisualStyleBackColor = true;
             this.btnUploadShapefile.Click += new System.EventHandler(this.btnUploadShapefile_Click);
-            this.btnUploadShapefile.Enabled = false;
             // 
             // btnValidate
             // 
@@ -57,23 +58,35 @@ namespace GTFS_Correction
             // lstStatus
             // 
             this.lstStatus.FormattingEnabled = true;
+            this.lstStatus.ItemHeight = 20;
             this.lstStatus.Location = new System.Drawing.Point(12, 99);
             this.lstStatus.Name = "lstStatus";
-            this.lstStatus.Size = new System.Drawing.Size(776, 199);
+            this.lstStatus.Size = new System.Drawing.Size(776, 184);
             this.lstStatus.TabIndex = 3;
             // 
             // txtLog
             // 
-            this.txtLog.Location = new System.Drawing.Point(12, 304);
+            this.txtLog.Location = new System.Drawing.Point(12, 289);
             this.txtLog.Multiline = true;
             this.txtLog.Name = "txtLog";
             this.txtLog.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.txtLog.Size = new System.Drawing.Size(776, 134);
             this.txtLog.TabIndex = 4;
             // 
+            // btnMergeGTFS
+            // 
+            this.btnMergeGTFS.Location = new System.Drawing.Point(132, 12);
+            this.btnMergeGTFS.Name = "btnMergeGTFS";
+            this.btnMergeGTFS.Size = new System.Drawing.Size(96, 23);
+            this.btnMergeGTFS.TabIndex = 5;
+            this.btnMergeGTFS.Text = "Merge GTFS";
+            this.btnMergeGTFS.UseVisualStyleBackColor = true;
+            this.btnMergeGTFS.Click += new System.EventHandler(this.btnMergeGTFS_Click);
+            // 
             // MainForm
             // 
-            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.ClientSize = new System.Drawing.Size(800, 435);
+            this.Controls.Add(this.btnMergeGTFS);
             this.Controls.Add(this.txtLog);
             this.Controls.Add(this.lstStatus);
             this.Controls.Add(this.btnValidate);
@@ -91,6 +104,7 @@ namespace GTFS_Correction
         private System.Windows.Forms.Button btnValidate;
         private System.Windows.Forms.ListBox lstStatus;
         private System.Windows.Forms.TextBox txtLog;
+        private System.Windows.Forms.Button btnMergeGTFS;
     }
 }
 
