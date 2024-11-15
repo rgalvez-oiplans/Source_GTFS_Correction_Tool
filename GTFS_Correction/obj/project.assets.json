@@ -406,6 +406,23 @@
           }
         }
       },
+      "PublicHoliday/2.41.0": {
+        "type": "package",
+        "frameworkAssemblies": [
+          "Microsoft.CSharp",
+          "System"
+        ],
+        "compile": {
+          "lib/net46/PublicHoliday.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net46/PublicHoliday.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "QuickGraph/3.6.61119.7": {
         "type": "package",
         "compile": {
@@ -1101,6 +1118,23 @@
         },
         "runtime": {
           "lib/net45/Newtonsoft.Json.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "PublicHoliday/2.41.0": {
+        "type": "package",
+        "frameworkAssemblies": [
+          "Microsoft.CSharp",
+          "System"
+        ],
+        "compile": {
+          "lib/net46/PublicHoliday.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net46/PublicHoliday.dll": {
             "related": ".xml"
           }
         }
@@ -2285,6 +2319,30 @@
         "packageIcon.png"
       ]
     },
+    "PublicHoliday/2.41.0": {
+      "sha512": "YJ0iGIRLdjvL2ZjsW5kCYvWgwdspxaFzO04NnuYmi//DBiwJbmGSinwWM5ued2ONOrMoWMpBcPvj6zq1WheAOQ==",
+      "type": "package",
+      "path": "publicholiday/2.41.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "lib/net35/PublicHoliday.dll",
+        "lib/net35/PublicHoliday.xml",
+        "lib/net40/PublicHoliday.dll",
+        "lib/net40/PublicHoliday.xml",
+        "lib/net46/PublicHoliday.dll",
+        "lib/net46/PublicHoliday.xml",
+        "lib/net6.0/PublicHoliday.dll",
+        "lib/net6.0/PublicHoliday.xml",
+        "lib/netstandard1.3/PublicHoliday.dll",
+        "lib/netstandard1.3/PublicHoliday.xml",
+        "lib/netstandard2.1/PublicHoliday.dll",
+        "lib/netstandard2.1/PublicHoliday.xml",
+        "publicholiday.2.41.0.nupkg.sha512",
+        "publicholiday.nuspec"
+      ]
+    },
     "QuickGraph/3.6.61119.7": {
       "sha512": "crtYNiFcYFtYbmbEfdYsdGw5M3923OO5ZZD25K+WeLPgTp/q4oq3U/FVrbaOK5+Jg8UJDmoZ6sqAVion4RgXCA==",
       "type": "package",
@@ -2969,6 +3027,7 @@
       "ExcelDataReader.DataSet >= 3.6.0",
       "Microsoft.NETFramework.ReferenceAssemblies >= 1.0.3",
       "Newtonsoft.Json >= 13.0.3",
+      "PublicHoliday >= 2.41.0",
       "QuickGraph >= 3.6.61119.7",
       "System.Data.SQLite.Core >= 1.0.118",
       "System.IO.Compression >= 4.3.0",
@@ -2976,7 +3035,8 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\rgalv\\.nuget\\packages\\": {}
+    "C:\\Users\\rgalv\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
@@ -2985,10 +3045,14 @@
       "projectName": "GTFS_Correction",
       "projectPath": "C:\\Users\\rgalv\\source\\repos\\rgalvez-oiplans\\GTFS_Correction_Tool\\GTFS_Correction\\GTFS_Correction.csproj",
       "packagesPath": "C:\\Users\\rgalv\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\rgalv\\Source\\Repos\\rgalvez-oiplans\\GTFS_Correction_Tool\\GTFS_Correction\\obj\\",
+      "outputPath": "C:\\Users\\rgalv\\source\\repos\\rgalvez-oiplans\\GTFS_Correction_Tool\\GTFS_Correction\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
         "C:\\Users\\rgalv\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
@@ -2996,6 +3060,7 @@
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -3043,6 +3108,10 @@
           "Newtonsoft.Json": {
             "target": "Package",
             "version": "[13.0.3, )"
+          },
+          "PublicHoliday": {
+            "target": "Package",
+            "version": "[2.41.0, )"
           },
           "QuickGraph": {
             "target": "Package",

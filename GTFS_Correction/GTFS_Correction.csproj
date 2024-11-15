@@ -13,6 +13,7 @@
     <PackageReference Include="ExcelDataReader" Version="3.6.0" />
     <PackageReference Include="ExcelDataReader.DataSet" Version="3.6.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="PublicHoliday" Version="2.41.0" />
     <PackageReference Include="QuickGraph" Version="3.6.61119.7" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.118" />
     <PackageReference Include="System.IO.Compression" Version="4.3.0" />

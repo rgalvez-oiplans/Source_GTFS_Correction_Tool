@@ -52,3 +52,4 @@ C:\Users\rgalv\source\repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Correction
 C:\Users\rgalv\source\repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Correction\obj\Release\net481\GTFS_Correction.csproj.CopyComplete
 C:\Users\rgalv\source\repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Correction\obj\Release\net481\GTFS_Correction.exe
 C:\Users\rgalv\source\repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Correction\obj\Release\net481\GTFS_Correction.pdb
+C:\Users\rgalv\source\repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Correction\obj\Release\net481\GTFS_Correction.frmMergeGTFS.resources

@@ -156,7 +156,7 @@ namespace GTFS_Correction
                 string databasePath = Path.Combine(Application.StartupPath, "GTFSToolDB.sqlite");
                 string feedInfoFilePath = Path.Combine(extractPath, "feed_info.txt");
                 string stopNamesFilePath = Path.Combine(extractPath, "stopnames.xlsx");
-
+                string calendarDatesFilePath = Path.Combine(extractPath, "calendar_dates.txt");
 
 
                 CreateLogFile(logFilePath);
@@ -279,6 +279,28 @@ namespace GTFS_Correction
                 {
                     MessageBox.Show("shapes.txt not found in the ZIP file.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
+
+                // Process exceptions from the spreadsheet
+                try
+                {
+                    lstStatus.Items.Add("Processing calendar exceptions...");
+                    await Task.Run(() =>
+                    {
+                        var exceptionProcessor = new CalendarExceptionProcessor((message, updateLast) => UpdateStatusList(message, updateLast));
+                        exceptionProcessor.ProcessExceptionsFromExcel(calendarDatesFilePath,tripsFilePath,calendarFilePath);
+                    });
+
+                    lstStatus.Items.Add("Calendar exceptions processed successfully.");
+                }
+                catch (Exception ex)
+                {
+                    lstStatus.Items.Add($"Error processing calendar exceptions: {ex.Message}");
+                    MessageBox.Show($"An error occurred: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+
+                lstStatus.Items.Add("Processing complete. Check the log file for details.");
+
+
 
                 lstStatus.Items.Add("Processing complete. Check the log file for details.");
                 txtLog.Text = await ReadAllTextAsync(logFilePath);
