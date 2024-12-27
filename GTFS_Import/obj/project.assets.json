@@ -54,17 +54,13 @@
           }
         }
       },
-      "DotSpatial.Serialization/3.0.1": {
+      "DotSpatial.Serialization/0.11.9.6": {
         "type": "package",
         "compile": {
-          "lib/net472/DotSpatial.Serialization.dll": {
-            "related": ".xml"
-          }
+          "lib/net40/DotSpatial.Serialization.dll": {}
         },
         "runtime": {
-          "lib/net472/DotSpatial.Serialization.dll": {
-            "related": ".xml"
-          }
+          "lib/net40/DotSpatial.Serialization.dll": {}
         }
       },
       "DotSpatial.Topology/1.9.0": {
@@ -1034,17 +1030,16 @@
         "lib/net472/DotSpatial.Projections.xml"
       ]
     },
-    "DotSpatial.Serialization/3.0.1": {
-      "sha512": "uB/xAgPtK44aRLkGx0WuGyI64OYLb++IqIk83dUQwiFBq8hH84EbS42MhzaSBQVCHF5E+Pzr6T291oYygh9A5w==",
+    "DotSpatial.Serialization/0.11.9.6": {
+      "sha512": "N4PwBu4eGBgV3MG2cuHYGlK9F52aEix2WyLagA8oNAG62QHZc4Qau9oc/NGTz8tMzfZOeb3FZOc+V6eWxUugdA==",
       "type": "package",
-      "path": "dotspatial.serialization/3.0.1",
+      "path": "dotspatial.serialization/0.11.9.6",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "dotspatial.serialization.3.0.1.nupkg.sha512",
+        "dotspatial.serialization.0.11.9.6.nupkg.sha512",
         "dotspatial.serialization.nuspec",
-        "lib/net472/DotSpatial.Serialization.dll",
-        "lib/net472/DotSpatial.Serialization.xml"
+        "lib/net40/DotSpatial.Serialization.dll"
       ]
     },
     "DotSpatial.Topology/1.9.0": {
@@ -3394,7 +3389,13 @@
         "warnAsError": [
           "NU1605"
         ]
-      }
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "direct"
+      },
+      "SdkAnalysisLevel": "9.0.100"
     },
     "frameworks": {
       "net8.0": {
@@ -3425,7 +3426,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.100/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.101/PortableRuntimeIdentifierGraph.json"
       }
     }
   },
@@ -3434,7 +3435,7 @@
       "code": "NU1602",
       "level": "Warning",
       "warningLevel": 1,
-      "message": "DotSpatial.Topology 1.9.0 does not provide an inclusive lower bound for dependency DotSpatial.Serialization. An approximate best match of DotSpatial.Serialization 0.11.9.6 was resolved.",
+      "message": "DotSpatial.Topology 1.9.0 does not provide an inclusive lower bound for dependency DotSpatial.Serialization. DotSpatial.Serialization 0.11.9.6 was resolved instead.",
       "libraryId": "DotSpatial.Serialization",
       "targetGraphs": [
         "net8.0"
@@ -3474,7 +3475,7 @@
       "code": "NU1701",
       "level": "Warning",
       "warningLevel": 1,
-      "message": "Package 'DotSpatial.Serialization 3.0.1' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net8.0'. This package may not be fully compatible with your project.",
+      "message": "Package 'DotSpatial.Serialization 0.11.9.6' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net8.0'. This package may not be fully compatible with your project.",
       "libraryId": "DotSpatial.Serialization",
       "targetGraphs": [
         "net8.0"

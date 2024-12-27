@@ -63,65 +63,12 @@ public class CalendarExceptionProcessor
             updateStatusAction?.Invoke($"Error processing exceptions: {ex.Message}", false);
         }
     }
-
-    private void ProcessScheduledException(
-    ExceptionInfo exception, List<TripData> trips, List<string[]> calendarDates, string calendarFilePath)
+    private int GetDayColumnIndex(string dayOfWeek, string[] header)
     {
-        var routeServiceIds = GetActiveServiceIdsForExceptionDate(exception.ExceptionDate, trips, calendarFilePath);
-        string exceptionDate = exception.ExceptionDate.ToString("yyyyMMdd");
-
-        // Create and add distinct "No Service" entries
-        var newEntries = routeServiceIds.Select(serviceId =>
-            new[] { serviceId, exceptionDate, exception.ExceptionType == "No Service" ? "2" : "1" });
-
-        calendarDates.AddRange(
-            newEntries.Except(calendarDates, new CalendarDateComparer())
-        );
-
-        // Handle "Sunday Service" exceptions
-        if (exception.ExceptionType == "Sunday Service")
-        {
-            var replacementServiceIds = GetReplacementServiceIds(exception, trips);
-            var replacementEntries = replacementServiceIds.Select(serviceId =>
-                new[] { serviceId, exceptionDate, "1" });
-
-            calendarDates.AddRange(
-                replacementEntries.Except(calendarDates, new CalendarDateComparer())
-            );
-        }
-    }
-    private List<string> GetReplacementServiceIds(ExceptionInfo exception, List<TripData> trips)
-    {
-        return trips
-            .Where(t => t.RouteId == exception.RouteId && t.ServiceId.Contains("sunday"))
-            .Select(t => t.ServiceId)
-            .Distinct()
-            .ToList();
-    }
-
-    private List<TripData> ReadTripsData(string tripsFilePath)
-    {
-        var trips = new List<TripData>();
-
-        if (File.Exists(tripsFilePath))
-        {
-            var lines = File.ReadAllLines(tripsFilePath).Skip(1); // Skip header row
-            foreach (var line in lines)
-            {
-                var parts = line.Split(',');
-                if (parts.Length > 3)
-                {
-                    trips.Add(new TripData
-                    {
-                        TripId = parts[0],
-                        RouteId = parts[2],
-                        ServiceId = parts[1]
-                    });
-                }
-            }
-        }
-
-        return trips;
+        int dayIndex = Array.IndexOf(header, dayOfWeek);
+        if (dayIndex == -1)
+            throw new ArgumentException($"Invalid or missing day column: {dayOfWeek}");
+        return dayIndex;
     }
 
     private List<string> GetActiveServiceIdsForExceptionDate(DateTime exceptionDate, List<TripData> trips, string calendarFilePath)
@@ -132,10 +79,10 @@ public class CalendarExceptionProcessor
         {
             updateStatusAction?.Invoke($"Error: calendar.txt not found at {calendarFilePath}", false);
             return activeServiceIds;
-        }
+        }  
 
         var lines = File.ReadAllLines(calendarFilePath);
-        var header = lines[0].Split(',');
+        var header = lines[0].Split(','); // Read the header row to determine column indices
 
         // Detect relevant column indices dynamically
         int serviceIdIndex = Array.IndexOf(header, "service_id");
@@ -149,16 +96,14 @@ public class CalendarExceptionProcessor
             return activeServiceIds;
         }
 
-        foreach (var line in lines.Skip(1))
+        foreach (var line in lines.Skip(1)) // Skip header row
         {
             var parts = line.Split(',');
             if (parts.Length <= Math.Max(serviceIdIndex, endDateIndex)) continue;
 
-            // Parse the start and end dates
             if (DateTime.TryParseExact(parts[startDateIndex], "yyyyMMdd", null, DateTimeStyles.None, out DateTime startDate) &&
                 DateTime.TryParseExact(parts[endDateIndex], "yyyyMMdd", null, DateTimeStyles.None, out DateTime endDate))
             {
-                // Check if the exception date falls within the start-end range and is active that day
                 if (exceptionDate >= startDate && exceptionDate <= endDate && parts[dayOfWeekIndex] == "1")
                 {
                     activeServiceIds.Add(parts[serviceIdIndex]);
@@ -169,116 +114,104 @@ public class CalendarExceptionProcessor
         return activeServiceIds.Distinct().ToList();
     }
 
-    private int GetDayColumnIndex(string dayOfWeek, string[] header)
+
+    private void ProcessScheduledException(ExceptionInfo exception, List<TripData> trips, List<string[]> calendarDates, string calendarFilePath)
     {
-        int dayIndex = Array.IndexOf(header, dayOfWeek);
-        if (dayIndex == -1)
-            throw new ArgumentException($"Invalid or missing day column: {dayOfWeek}");
-        return dayIndex;
-    }
+        // Only process routes that match the RouteId in the exception
+        var routeServiceIds = GetActiveServiceIdsForExceptionDate(exception.ExceptionDate, trips, calendarFilePath)
+                                .Where(serviceId => trips.Any(t => t.ServiceId == serviceId && t.RouteId == exception.RouteId))
+                                .ToList();
 
+        string exceptionDate = exception.ExceptionDate.ToString("yyyyMMdd");
 
-    private bool CheckIfActiveOnDate(string[] calendarParts, DateTime exceptionDate)
-    {
-        string dayOfWeek = exceptionDate.DayOfWeek.ToString().ToLower();
-        int dayIndex = GetDayColumnIndex(dayOfWeek);
-
-        return calendarParts[dayIndex] == "1";
-    }
-
-    private int GetDayColumnIndex(string dayOfWeek)
-    {
-        switch (dayOfWeek.ToLower())
+        // Create and add distinct "No Service" entries
+        if (exception.ExceptionType == "No Service")
         {
-            case "sunday":
-                return 1;
-            case "monday":
-                return 2;
-            case "tuesday":
-                return 3;
-            case "wednesday":
-                return 4;
-            case "thursday":
-                return 5;
-            case "friday":
-                return 6;
-            case "saturday":
-                return 7;
-            default:
-                throw new ArgumentException("Invalid day of the week");
+            var noServiceEntries = routeServiceIds
+                .Select(serviceId => new[] { serviceId, exceptionDate, "2" })
+                .Distinct(new CalendarDateComparer());
+
+            calendarDates.AddRange(noServiceEntries);
+        }
+
+        // Handle "Sunday Service" exceptions
+        if (exception.ExceptionType == "Sunday Service")
+        {
+            var replacementServiceIds = GetReplacementServiceIds(exception, trips);
+            var replacementEntries = replacementServiceIds
+                .Select(serviceId => new[] { serviceId, exceptionDate, "1" })
+                .Distinct(new CalendarDateComparer());
+
+            calendarDates.AddRange(replacementEntries);
         }
     }
 
-    private List<string> GetSundayServiceIds(List<TripData> trips, string calendarFilePath)
+    private List<string> GetReplacementServiceIds(ExceptionInfo exception, List<TripData> trips)
     {
-        var sundayServiceIds = new List<string>();
+        return trips
+            .Where(t => t.RouteId == exception.RouteId && t.ServiceId.Contains("sunday"))
+            .Select(t => t.ServiceId)
+            .Distinct()
+            .ToList();
+    }
 
-        if (!File.Exists(calendarFilePath))
+    private List<TripData> ReadTripsData(string tripsFilePath)
+    {
+        var trips = new List<TripData>();
+
+        if (!File.Exists(tripsFilePath))
         {
-            updateStatusAction?.Invoke($"Error: calendar.txt not found at {calendarFilePath}", false);
-            return sundayServiceIds;
+            updateStatusAction?.Invoke($"Error: {tripsFilePath} not found.", false);
+            return trips;
         }
 
-        var lines = File.ReadAllLines(calendarFilePath);
-        var header = lines[0].Split(','); // Read the header row to determine column indices
+        var lines = File.ReadAllLines(tripsFilePath);
 
-        // Get the index for 'service_id' and 'sunday' columns
+        if (lines.Length < 2)
+        {
+            updateStatusAction?.Invoke("Error: trips.txt file is empty or has no data.", false);
+            return trips;
+        }
+
+        // Split the header to detect the column indices
+        var header = lines[0].Split(',');
+
+        // Dynamically detect indices of TripId, RouteId, and ServiceId columns
+        int tripIdIndex = Array.IndexOf(header, "trip_id");
+        int routeIdIndex = Array.IndexOf(header, "route_id");
         int serviceIdIndex = Array.IndexOf(header, "service_id");
-        int sundayIndex = Array.IndexOf(header, "sunday");
 
-        if (serviceIdIndex == -1 || sundayIndex == -1)
+        // Check if the required columns are found
+        if (tripIdIndex == -1 || routeIdIndex == -1 || serviceIdIndex == -1)
         {
-            updateStatusAction?.Invoke("Error: 'service_id' or 'sunday' column not found in calendar.txt.", false);
-            return sundayServiceIds;
+            updateStatusAction?.Invoke("Error: Required columns (trip_id, route_id, service_id) not found in trips.txt.", false);
+            return trips;
         }
 
-        // Read the rest of the calendar data and extract Sunday service IDs
-        foreach (var line in lines.Skip(1))
+        // Read each line of the file and map it to a TripData object
+        foreach (var line in lines.Skip(1)) // Skip header
         {
             var parts = line.Split(',');
 
-            if (parts.Length > Math.Max(serviceIdIndex, sundayIndex) && parts[sundayIndex] == "1")
+            // Ensure the line has enough columns to process
+            if (parts.Length > Math.Max(tripIdIndex, Math.Max(routeIdIndex, serviceIdIndex)))
             {
-                string serviceId = parts[serviceIdIndex];
-
-                // Check if the service ID exists in the trips data
-                if (trips.Any(t => t.ServiceId == serviceId))
+                var tripData = new TripData
                 {
-                    sundayServiceIds.Add(serviceId);
-                }
+                    TripId = parts[tripIdIndex],
+                    RouteId = parts[routeIdIndex],
+                    ServiceId = parts[serviceIdIndex]
+                };
+
+                trips.Add(tripData);
             }
         }
 
-        return sundayServiceIds.Distinct().ToList(); // Ensure unique service IDs
+        updateStatusAction?.Invoke($"Successfully loaded {trips.Count} trips from trips.txt.", false);
+        return trips;
     }
 
-    private List<ExceptionInfo> GetExceptionsFromExcel(ExcelWorksheet worksheet)
-    {
-        var exceptions = new List<ExceptionInfo>();
 
-        for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
-        {
-            string municipality = worksheet.Cells[row, 1].Text;
-            string routeId = worksheet.Cells[row, 2].Text;
-            string exceptionReason = worksheet.Cells[row, 3].Text;
-            string exceptionDateText = worksheet.Cells[row, 4].Text;
-            string exceptionType = worksheet.Cells[row, 5].Text;
-
-            if (DateTime.TryParseExact(exceptionDateText, "M/d/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime exceptionDate))
-            {
-                exceptions.Add(new ExceptionInfo
-                {
-                    Municipality = municipality,
-                    RouteId = routeId,
-                    ExceptionReason = exceptionReason,
-                    ExceptionDate = exceptionDate,
-                    ExceptionType = exceptionType
-                });
-            }
-        }
-
-        return exceptions;
-    }
     private List<string[]> ReadCalendarDates(string calendarDatesFilePath)
     {
         var calendarDates = new List<string[]>();
@@ -297,7 +230,7 @@ public class CalendarExceptionProcessor
 
     private void WriteCalendarDates(string calendarDatesFilePath, List<string[]> calendarDates)
     {
-        var lines = calendarDates.Select(d => string.Join(",", d)).ToList();
+        var lines = calendarDates.Select(d => string.Join(",", d)).ToList().Distinct();
         File.WriteAllLines(calendarDatesFilePath, lines);
     }
 
@@ -323,6 +256,34 @@ public class CalendarExceptionProcessor
 
         return (minYear, maxYear);
     }
+    private List<ExceptionInfo> GetExceptionsFromExcel(ExcelWorksheet worksheet)
+    {
+        var exceptions = new List<ExceptionInfo>();
+
+        for (int row = 2; row <= worksheet.Dimension.End.Row; row++) // Skip header row
+        {
+            string municipality = worksheet.Cells[row, 1].Text;
+            string routeId = worksheet.Cells[row, 2].Text;
+            string exceptionReason = worksheet.Cells[row, 3].Text;
+            string exceptionDateText = worksheet.Cells[row, 4].Text;
+            string exceptionType = worksheet.Cells[row, 5].Text;
+
+            if (DateTime.TryParseExact(exceptionDateText, "M/d/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime exceptionDate))
+            {
+                exceptions.Add(new ExceptionInfo
+                {
+                    Municipality = municipality,
+                    RouteId = routeId,
+                    ExceptionReason = exceptionReason,
+                    ExceptionDate = exceptionDate,
+                    ExceptionType = exceptionType
+                });
+            }
+        }
+
+        return exceptions;
+    }
+
 
     private class ExceptionInfo
     {
@@ -339,6 +300,7 @@ public class CalendarExceptionProcessor
         public string RouteId { get; set; }
         public string ServiceId { get; set; }
     }
+
     public class CalendarDateComparer : IEqualityComparer<string[]>
     {
         public bool Equals(string[] x, string[] y)
@@ -352,4 +314,3 @@ public class CalendarExceptionProcessor
         }
     }
 }
-

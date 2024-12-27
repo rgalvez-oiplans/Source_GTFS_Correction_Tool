@@ -54,3 +54,4 @@ C:\Users\rgalv\source\repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Import\obj
 C:\Users\rgalv\source\repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Import\obj\Release\net8.0\GTFS_Import.pdb
 C:\Users\rgalv\source\repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Import\obj\Release\net8.0\GTFS_Import.genruntimeconfig.cache
 C:\Users\rgalv\source\repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Import\obj\Release\net8.0\ref\GTFS_Import.dll
+C:\Users\rgalv\source\repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Import\bin\Release\net8.0\PublicHoliday.dll
