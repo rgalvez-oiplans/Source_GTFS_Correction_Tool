@@ -101,10 +101,10 @@ C:\Users\rgalv\Source\Repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Import\obj
 C:\Users\rgalv\Source\Repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Import\obj\Debug\net8.0\GTFS_Import.AssemblyInfo.cs
 C:\Users\rgalv\Source\Repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Import\obj\Debug\net8.0\GTFS_Import.csproj.CoreCompileInputs.cache
 C:\Users\rgalv\Source\Repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Import\obj\Debug\net8.0\GTFS_Import.sourcelink.json
-C:\Users\rgalv\Source\Repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Import\obj\Debug\net8.0\GTFS_Import.csproj.CopyComplete
 C:\Users\rgalv\Source\Repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Import\obj\Debug\net8.0\GTFS_Import.dll
 C:\Users\rgalv\Source\Repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Import\obj\Debug\net8.0\refint\GTFS_Import.dll
 C:\Users\rgalv\Source\Repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Import\obj\Debug\net8.0\GTFS_Import.pdb
 C:\Users\rgalv\Source\Repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Import\obj\Debug\net8.0\GTFS_Import.genruntimeconfig.cache
 C:\Users\rgalv\Source\Repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Import\obj\Debug\net8.0\ref\GTFS_Import.dll
 C:\Users\rgalv\source\repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Import\bin\Debug\net8.0\PublicHoliday.dll
+C:\Users\rgalv\source\repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Import\obj\Debug\net8.0\GTFS_Imp.9DFEB1BF.Up2Date
