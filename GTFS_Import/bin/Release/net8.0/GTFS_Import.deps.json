@@ -20,7 +20,7 @@
         "dependencies": {
           "DotSpatial.NTSExtension": "3.0.1",
           "DotSpatial.Projections": "3.0.1",
-          "DotSpatial.Serialization": "3.0.1",
+          "DotSpatial.Serialization": "0.11.9.6",
           "NetTopologySuite": "2.4.0",
           "System.Memory": "4.5.4",
           "System.Numerics.Vectors": "4.5.0"
@@ -53,17 +53,17 @@
           }
         }
       },
-      "DotSpatial.Serialization/3.0.1": {
+      "DotSpatial.Serialization/0.11.9.6": {
         "runtime": {
-          "lib/net472/DotSpatial.Serialization.dll": {
-            "assemblyVersion": "3.0.1.0",
-            "fileVersion": "3.0.1.0"
+          "lib/net40/DotSpatial.Serialization.dll": {
+            "assemblyVersion": "0.11.9.6",
+            "fileVersion": "0.11.9.6"
           }
         }
       },
       "DotSpatial.Topology/1.9.0": {
         "dependencies": {
-          "DotSpatial.Serialization": "3.0.1"
+          "DotSpatial.Serialization": "0.11.9.6"
         },
         "runtime": {
           "lib/net40-Client/DotSpatial.Topology.dll": {
@@ -574,7 +574,10 @@
           "System.IO.Compression.ZipFile": "4.3.0"
         },
         "runtime": {
-          "GTFS_Correction.exe": {}
+          "GTFS_Correction.exe": {
+            "assemblyVersion": "1.0.0",
+            "fileVersion": "1.0.0.0"
+          }
         }
       }
     }
@@ -606,12 +609,12 @@
       "path": "dotspatial.projections/3.0.1",
       "hashPath": "dotspatial.projections.3.0.1.nupkg.sha512"
     },
-    "DotSpatial.Serialization/3.0.1": {
+    "DotSpatial.Serialization/0.11.9.6": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-uB/xAgPtK44aRLkGx0WuGyI64OYLb++IqIk83dUQwiFBq8hH84EbS42MhzaSBQVCHF5E+Pzr6T291oYygh9A5w==",
-      "path": "dotspatial.serialization/3.0.1",
-      "hashPath": "dotspatial.serialization.3.0.1.nupkg.sha512"
+      "sha512": "sha512-N4PwBu4eGBgV3MG2cuHYGlK9F52aEix2WyLagA8oNAG62QHZc4Qau9oc/NGTz8tMzfZOeb3FZOc+V6eWxUugdA==",
+      "path": "dotspatial.serialization/0.11.9.6",
+      "hashPath": "dotspatial.serialization.0.11.9.6.nupkg.sha512"
     },
     "DotSpatial.Topology/1.9.0": {
       "type": "package",

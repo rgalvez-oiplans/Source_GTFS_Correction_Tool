@@ -9,3 +9,6 @@ build_property.RootNamespace = GTFS_Correction
 build_property.ProjectDir = C:\Users\rgalv\source\repos\rgalvez-oiplans\GTFS_Correction_Tool\GTFS_Correction\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.CsWinRTUseWindowsUIXamlProjections = false
+build_property.EffectiveAnalysisLevelStyle = 
+build_property.EnableCodeStyleSeverity = 

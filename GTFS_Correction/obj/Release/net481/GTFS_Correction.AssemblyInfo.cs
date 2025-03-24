@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Open Innovation Plans, LLC")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e32526cff0847b20d200370677090c5e4e410d6b")]
 [assembly: System.Reflection.AssemblyProductAttribute("GTFS_Correction")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GTFS_Correction")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
