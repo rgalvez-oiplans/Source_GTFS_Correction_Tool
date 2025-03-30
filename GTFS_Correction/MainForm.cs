@@ -445,6 +445,20 @@ namespace GTFS_Correction
             mergeForm.ShowDialog();  // Or use mergeForm.Show() if you don't want it to be modal
 
         }
+
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // Close the application
+            Application.Exit();
+        }
+
+        private void aboutToolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            using (frmAbout aboutForm = new frmAbout())
+            {
+                aboutForm.ShowDialog(this); // Shows the About form as a modal dialog
+            }
+        }
     }
 }
 

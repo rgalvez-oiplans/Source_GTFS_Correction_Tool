@@ -39,12 +39,12 @@
             this.lstGTFSFiles.ItemHeight = 20;
             this.lstGTFSFiles.Location = new System.Drawing.Point(23, 55);
             this.lstGTFSFiles.Name = "lstGTFSFiles";
-            this.lstGTFSFiles.Size = new System.Drawing.Size(755, 204);
+            this.lstGTFSFiles.Size = new System.Drawing.Size(877, 204);
             this.lstGTFSFiles.TabIndex = 0;
             // 
             // btnAddGTFS
             // 
-            this.btnAddGTFS.Location = new System.Drawing.Point(663, 265);
+            this.btnAddGTFS.Location = new System.Drawing.Point(785, 265);
             this.btnAddGTFS.Name = "btnAddGTFS";
             this.btnAddGTFS.Size = new System.Drawing.Size(115, 33);
             this.btnAddGTFS.TabIndex = 1;
@@ -54,7 +54,7 @@
             // 
             // btnMergeGTFS
             // 
-            this.btnMergeGTFS.Location = new System.Drawing.Point(663, 304);
+            this.btnMergeGTFS.Location = new System.Drawing.Point(785, 304);
             this.btnMergeGTFS.Name = "btnMergeGTFS";
             this.btnMergeGTFS.Size = new System.Drawing.Size(115, 33);
             this.btnMergeGTFS.TabIndex = 2;
@@ -66,7 +66,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 343);
+            this.ClientSize = new System.Drawing.Size(918, 343);
             this.Controls.Add(this.btnMergeGTFS);
             this.Controls.Add(this.btnAddGTFS);
             this.Controls.Add(this.lstGTFSFiles);

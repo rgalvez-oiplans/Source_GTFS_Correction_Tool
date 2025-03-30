@@ -8,296 +8,252 @@ namespace GTFS_Correction
 {
     public class GTFSFileMerger
     {
-        // Stores all GTFS data in-memory, keyed by filename
+        // Stores all merged rows, keyed by filename
         private readonly Dictionary<string, List<string[]>> dataFiles
             = new Dictionary<string, List<string[]>>();
 
-        // For avoiding duplicates in routes.txt
+        // For routes.txt duplicates
         private readonly HashSet<string> seenRouteIds = new HashSet<string>();
 
-        // Tracks each unique final stop_id => (lat, lon).
-        // If a new row has same stop_id but different lat/lon, we rename it.
+        // Known stops across all feeds:
+        //   Key = stop_id, Value = (lat, lon)
+        //   We never rename in feedIndex=1. If feedIndex>1 and lat/lon differ => rename.
         private readonly Dictionary<string, (string Lat, string Lon)> knownStops
             = new Dictionary<string, (string Lat, string Lon)>();
 
-        // During each LoadGTFSFile call, we’ll build a mapping of oldStopId->newStopId 
-        // for that feed, so we can update stop_times references accordingly.
+        // Known services across all feeds (for calendar & calendar_dates)
+        //   Key = service_id, Value = fingerprint of row data (excluding the ID).
+        //   If feedIndex>1 and row differs => rename.
+        private readonly Dictionary<string, string> knownServiceFingerprints
+            = new Dictionary<string, string>();
+
+        // For each feed, track old->new renames (stops, service IDs)
         private Dictionary<string, string> renamedStopIds;
+        private Dictionary<string, string> renamedServiceIds;
 
         /// <summary>
-        /// Loads a GTFS zip file, unzips it, merges data into dataFiles.
-        /// Row order is preserved for new records. If an existing stop’s lat/lon changed, 
-        /// we suffix its stop_id with "_Merged_{FileIndex}" and update references in stop_times.
+        /// Loads GTFS from a zip file. If fileIndex=1 (first feed), no IDs get renamed.
+        /// For subsequent feeds, if an ID conflicts with known data, we rename to ID_Merged_{fileIndex}.
         /// </summary>
-        /// <param name="zipFilePath">Path to the GTFS zip file.</param>
-        /// <param name="FileIndex">
-        /// A unique index for this feed (1,2,3...). Used for "_Merged_{FileIndex}" suffixing.
-        /// </param>
-        public void LoadGTFSFile(string zipFilePath, int FileIndex)
+        public void LoadGTFSFile(string zipFilePath, int fileIndex)
         {
-            // A fresh mapping for each feed: oldStopId => newStopId
             renamedStopIds = new Dictionary<string, string>();
+            renamedServiceIds = new Dictionary<string, string>();
 
-            string tempDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-
+            string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             try
             {
-                Directory.CreateDirectory(tempDirectory);
-                ZipFile.ExtractToDirectory(zipFilePath, tempDirectory);
+                Directory.CreateDirectory(tempDir);
+                ZipFile.ExtractToDirectory(zipFilePath, tempDir);
 
-                // Get all .txt files from the extracted folder
-                // but ensure "stops.txt" comes before "stop_times.txt" in the sort order
-                var filesToLoad = Directory.GetFiles(tempDirectory, "*.txt")
-                    .OrderBy(fn => OrderForStopsFirst(fn))
+                // Custom order: stops.txt < calendar.txt < calendar_dates.txt < stop_times.txt < trips.txt
+                var files = Directory.GetFiles(tempDir, "*.txt")
+                    .OrderBy(fn => CustomFileOrder(fn))
                     .ThenBy(fn => fn, StringComparer.OrdinalIgnoreCase)
                     .ToArray();
 
-                foreach (var file in filesToLoad)
+                foreach (var filePath in files)
                 {
-                    string fileName = Path.GetFileName(file);
-
-                    // Ensure we have a place in dataFiles for this filename
+                    string fileName = Path.GetFileName(filePath);
                     if (!dataFiles.ContainsKey(fileName))
                     {
                         dataFiles[fileName] = new List<string[]>();
                     }
 
-                    var lines = File.ReadAllLines(file);
+                    var lines = File.ReadAllLines(filePath);
                     bool isFirstTimeForThisFile = (dataFiles[fileName].Count == 0);
 
-                    // -------------------------------------------------------------------
-                    // 1) Special handling for agency.txt:
-                    //    - Only keep the first feed’s header + first data row
-                    // -------------------------------------------------------------------
                     if (fileName.Equals("agency.txt", StringComparison.OrdinalIgnoreCase))
                     {
+                        // Only keep first feed’s row
                         if (isFirstTimeForThisFile)
                         {
-                            // Add header if it exists
-                            if (lines.Length > 0)
-                            {
-                                dataFiles[fileName].Add(lines[0].Split(','));
-                            }
-                            // Add first data row if it exists
-                            if (lines.Length > 1)
-                            {
-                                dataFiles[fileName].Add(lines[1].Split(','));
-                            }
+                            if (lines.Length > 0) dataFiles[fileName].Add(lines[0].Split(','));
+                            if (lines.Length > 1) dataFiles[fileName].Add(lines[1].Split(','));
                         }
-                        // Ignore subsequent agency.txt files entirely
                         continue;
                     }
 
-                    // -------------------------------------------------------------------
-                    // 2) Special handling for feed_info.txt:
-                    //    - Only keep the first feed’s header + first data row
-                    // -------------------------------------------------------------------
                     if (fileName.Equals("feed_info.txt", StringComparison.OrdinalIgnoreCase))
                     {
                         if (isFirstTimeForThisFile)
                         {
-                            if (lines.Length > 0)
-                            {
-                                dataFiles[fileName].Add(lines[0].Split(',')); // header
-                            }
-                            if (lines.Length > 1)
-                            {
-                                dataFiles[fileName].Add(lines[1].Split(',')); // first data row
-                            }
+                            if (lines.Length > 0) dataFiles[fileName].Add(lines[0].Split(','));
+                            if (lines.Length > 1) dataFiles[fileName].Add(lines[1].Split(','));
                         }
-                        // Ignore subsequent feed_info.txt files
                         continue;
                     }
 
-                    // -------------------------------------------------------------------
-                    // 3) stops.txt logic: 
-                    //    - If same stop_id but lat/lon changed => rename new ID with "_Merged_{FileIndex}".
-                    //    - Keep row order, skip duplicates if lat/lon is identical.
-                    // -------------------------------------------------------------------
                     if (fileName.Equals("stops.txt", StringComparison.OrdinalIgnoreCase))
                     {
-                        ProcessStopsFile(lines, fileName, isFirstTimeForThisFile, FileIndex);
-                        continue; // done with stops.txt
-                    }
-
-                    // -------------------------------------------------------------------
-                    // 4) routes.txt logic (avoid duplicates based on route_id).
-                    // -------------------------------------------------------------------
-                    if (fileName.Equals("routes.txt", StringComparison.OrdinalIgnoreCase))
-                    {
-                        ProcessRoutesFile(lines, fileName, isFirstTimeForThisFile);
-                        continue; // done with routes.txt
-                    }
-
-                    // -------------------------------------------------------------------
-                    // 5) stop_times.txt logic:
-                    //    - If we renamed some stops, we update their stop_id references.
-                    // -------------------------------------------------------------------
-                    if (fileName.Equals("stop_times.txt", StringComparison.OrdinalIgnoreCase))
-                    {
-                        ProcessStopTimesFile(lines, fileName, isFirstTimeForThisFile);
+                        ProcessStops(lines, fileName, isFirstTimeForThisFile, fileIndex);
                         continue;
                     }
 
-                    // -------------------------------------------------------------------
-                    // 6) For all other files: 
-                    //    - We simply append data, skipping the header on subsequent files
-                    // -------------------------------------------------------------------
+                    if (fileName.Equals("calendar.txt", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ProcessCalendar(lines, fileName, isFirstTimeForThisFile, fileIndex);
+                        continue;
+                    }
+
+                    if (fileName.Equals("calendar_dates.txt", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ProcessCalendarDates(lines, fileName, isFirstTimeForThisFile, fileIndex);
+                        continue;
+                    }
+
+                    if (fileName.Equals("routes.txt", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ProcessRoutes(lines, fileName, isFirstTimeForThisFile);
+                        continue;
+                    }
+
+                    if (fileName.Equals("stop_times.txt", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ProcessStopTimes(lines, fileName, isFirstTimeForThisFile);
+                        continue;
+                    }
+
+                    if (fileName.Equals("trips.txt", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ProcessTrips(lines, fileName, isFirstTimeForThisFile);
+                        continue;
+                    }
+
+                    // everything else => just merge
                     for (int i = 0; i < lines.Length; i++)
                     {
-                        // If we already have a header, skip line[0] from subsequent files
                         if (i == 0 && !isFirstTimeForThisFile)
                             continue;
-
-                        var parts = lines[i].Split(',');
-                        dataFiles[fileName].Add(parts);
+                        dataFiles[fileName].Add(lines[i].Split(','));
                     }
                 }
             }
             catch (Exception ex)
             {
-                throw new IOException($"Error loading GTFS files from {zipFilePath}: {ex.Message}");
+                throw new IOException($"Error loading GTFS from {zipFilePath}: {ex.Message}");
             }
             finally
             {
-                // Clean up the temporary directory
-                if (Directory.Exists(tempDirectory))
+                if (Directory.Exists(tempDir))
                 {
-                    Directory.Delete(tempDirectory, true);
+                    Directory.Delete(tempDir, true);
                 }
-
-                // Clear renamedStopIds since it's specific to this feed
                 renamedStopIds = null;
+                renamedServiceIds = null;
             }
         }
 
-        /// <summary>
-        /// Defines a custom ordering so that "stops.txt" sorts before "stop_times.txt",
-        /// ensuring we process stops first (which sets renameStopIds) and then stop_times after.
-        /// This fixes the issue where alphabetical order would put "stop_times.txt" before "stops.txt".
-        /// </summary>
-        private static int OrderForStopsFirst(string filePath)
+        // Custom sort
+        private static int CustomFileOrder(string path)
         {
-            string name = Path.GetFileName(filePath).ToLowerInvariant();
-            if (name == "stops.txt") return 0;
-            if (name == "stop_times.txt") return 1;
-            // everything else can be 2
-            return 2;
+            string f = Path.GetFileName(path).ToLowerInvariant();
+            if (f == "stops.txt") return 0;
+            if (f == "calendar.txt") return 1;
+            if (f == "calendar_dates.txt") return 2;
+            if (f == "stop_times.txt") return 3;
+            if (f == "trips.txt") return 4;
+            return 5;
         }
 
-        /// <summary>
-        /// If the same stop_id appears with different lat/lon, we rename the new row’s ID 
-        /// to oldStopId_Merged_{FileIndex}. We also store that rename in renamedStopIds so that 
-        /// stop_times can reference the new ID.
-        /// </summary>
-        private void ProcessStopsFile(string[] lines, string fileName, bool isFirstFile, int fileIndex)
+        // ----------------------------------------------------------------
+        // STOPS => if fileIndex=1 => no rename, else rename if lat/lon differs
+        // ----------------------------------------------------------------
+        private void ProcessStops(string[] lines, string fileName, bool isFirstFile, int fileIndex)
         {
-            int stopIdColIndex = -1;
-            int latColIndex = -1;
-            int lonColIndex = -1;
+            int stopIdIndex = -1, latIndex = -1, lonIndex = -1;
 
-            // If first time, add header
             if (isFirstFile && lines.Length > 0)
             {
-                var headerParts = lines[0].Split(',');
-                dataFiles[fileName].Add(headerParts);
-
-                stopIdColIndex = Array.IndexOf(headerParts, "stop_id");
-                latColIndex = Array.IndexOf(headerParts, "stop_lat");
-                lonColIndex = Array.IndexOf(headerParts, "stop_lon");
+                var header = lines[0].Split(',');
+                dataFiles[fileName].Add(header);
+                stopIdIndex = Array.IndexOf(header, "stop_id");
+                latIndex = Array.IndexOf(header, "stop_lat");
+                lonIndex = Array.IndexOf(header, "stop_lon");
             }
             else
             {
-                // Already have a header, find indexes
                 var existingHeader = dataFiles[fileName][0];
-                stopIdColIndex = Array.IndexOf(existingHeader, "stop_id");
-                latColIndex = Array.IndexOf(existingHeader, "stop_lat");
-                lonColIndex = Array.IndexOf(existingHeader, "stop_lon");
+                stopIdIndex = Array.IndexOf(existingHeader, "stop_id");
+                latIndex = Array.IndexOf(existingHeader, "stop_lat");
+                lonIndex = Array.IndexOf(existingHeader, "stop_lon");
             }
 
-            // Read data rows
             for (int i = (isFirstFile ? 1 : 0); i < lines.Length; i++)
             {
-                // If not first-time, skip the header row from subsequent files
                 if (i == 0 && !isFirstFile)
                     continue;
 
                 var parts = lines[i].Split(',');
-
-                // If we can't find stop_id col, just add row
-                if (stopIdColIndex < 0 || stopIdColIndex >= parts.Length)
+                if (stopIdIndex < 0 || stopIdIndex >= parts.Length)
                 {
                     dataFiles[fileName].Add(parts);
                     continue;
                 }
 
-                string stopId = parts[stopIdColIndex];
+                string stopId = parts[stopIdIndex];
                 if (string.IsNullOrEmpty(stopId))
                 {
-                    // No ID => just add
                     dataFiles[fileName].Add(parts);
                     continue;
                 }
 
-                // Attempt to find lat/lon
-                string lat = (latColIndex >= 0 && latColIndex < parts.Length)
-                             ? parts[latColIndex] : "";
-                string lon = (lonColIndex >= 0 && lonColIndex < parts.Length)
-                             ? parts[lonColIndex] : "";
+                string lat = (latIndex >= 0 && latIndex < parts.Length) ? parts[latIndex] : "";
+                string lon = (lonIndex >= 0 && lonIndex < parts.Length) ? parts[lonIndex] : "";
 
-                // If we've never seen this stop_id before:
                 if (!knownStops.ContainsKey(stopId))
                 {
-                    // record it
                     knownStops[stopId] = (lat, lon);
                     dataFiles[fileName].Add(parts);
                 }
                 else
                 {
-                    // We have seen stopId. Compare lat/lon:
-                    var oldLatLon = knownStops[stopId];
-                    bool latChanged = !string.IsNullOrEmpty(lat) && lat != oldLatLon.Lat;
-                    bool lonChanged = !string.IsNullOrEmpty(lon) && lon != oldLatLon.Lon;
-
-                    if (latChanged || lonChanged)
+                    // If first feed => no rename
+                    if (fileIndex == 1)
                     {
-                        // We have to rename this new row’s stop_id
-                        string newStopId = stopId + "_Merged_" + fileIndex;
-
-                        // update stop_id in 'parts'
-                        parts[stopIdColIndex] = newStopId;
                         dataFiles[fileName].Add(parts);
-
-                        // record the new lat/lon under the new ID
-                        knownStops[newStopId] = (lat, lon);
-
-                        // Also store that this feed's oldStopId references newStopId
-                        renamedStopIds[stopId] = newStopId;
                     }
                     else
                     {
-                        // same lat/lon => skip the duplicate row
+                        // subsequent feed => rename if lat/lon differs from known
+                        var oldVal = knownStops[stopId];
+                        if (oldVal.Lat != lat || oldVal.Lon != lon)
+                        {
+                            string newId = stopId + "_Merged_" + fileIndex;
+                            parts[stopIdIndex] = newId;
+                            dataFiles[fileName].Add(parts);
+
+                            knownStops[newId] = (lat, lon);
+                            renamedStopIds[stopId] = newId;
+                            Console.WriteLine($"[stops.txt] Renaming {stopId} => {newId} (feed {fileIndex}, lat/lon changed)");
+                        }
+                        else
+                        {
+                            // same lat/lon => keep
+                            dataFiles[fileName].Add(parts);
+                        }
                     }
                 }
             }
         }
 
-        /// <summary>
-        /// routes.txt logic: if we see a route_id again, skip it (duplicate).
-        /// </summary>
-        private void ProcessRoutesFile(string[] lines, string fileName, bool isFirstFile)
+        // ----------------------------------------------------------------
+        // CALENDAR => if fileIndex=1 => no rename, else rename if row changed
+        // ----------------------------------------------------------------
+        private void ProcessCalendar(string[] lines, string fileName, bool isFirstFile, int fileIndex)
         {
-            int routeIdColIndex = -1;
+            int svcIdx = -1;
+
             if (isFirstFile && lines.Length > 0)
             {
-                var headerParts = lines[0].Split(',');
-                dataFiles[fileName].Add(headerParts);
-                routeIdColIndex = Array.IndexOf(headerParts, "route_id");
+                var header = lines[0].Split(',');
+                dataFiles[fileName].Add(header);
+                svcIdx = Array.IndexOf(header, "service_id");
             }
             else
             {
                 var existingHeader = dataFiles[fileName][0];
-                routeIdColIndex = Array.IndexOf(existingHeader, "route_id");
+                svcIdx = Array.IndexOf(existingHeader, "service_id");
             }
 
             for (int i = (isFirstFile ? 1 : 0); i < lines.Length; i++)
@@ -306,42 +262,202 @@ namespace GTFS_Correction
                     continue;
 
                 var parts = lines[i].Split(',');
-                if (routeIdColIndex >= 0 && routeIdColIndex < parts.Length)
+                if (svcIdx < 0 || svcIdx >= parts.Length)
                 {
-                    string routeId = parts[routeIdColIndex];
-                    if (!string.IsNullOrEmpty(routeId) && !seenRouteIds.Contains(routeId))
-                    {
-                        dataFiles[fileName].Add(parts);
-                        seenRouteIds.Add(routeId);
-                    }
-                    // else duplicate => skip
+                    dataFiles[fileName].Add(parts);
+                    continue;
+                }
+
+                string svcId = parts[svcIdx];
+                if (string.IsNullOrEmpty(svcId))
+                {
+                    dataFiles[fileName].Add(parts);
+                    continue;
+                }
+
+                // Build a fingerprint from the row minus service_id column
+                string fp = BuildFingerprint(parts, svcIdx);
+
+                if (!knownServiceFingerprints.ContainsKey(svcId))
+                {
+                    knownServiceFingerprints[svcId] = fp;
+                    dataFiles[fileName].Add(parts);
                 }
                 else
                 {
-                    // If route_id column not found, just add row
+                    // first feed => keep
+                    if (fileIndex == 1)
+                    {
+                        dataFiles[fileName].Add(parts);
+                    }
+                    else
+                    {
+                        // subsequent feed => rename if data changed
+                        var oldFp = knownServiceFingerprints[svcId];
+                        if (fp != oldFp)
+                        {
+                            string newId = svcId + "_Merged_" + fileIndex;
+                            parts[svcIdx] = newId;
+                            dataFiles[fileName].Add(parts);
+
+                            knownServiceFingerprints[newId] = fp;
+                            renamedServiceIds[svcId] = newId;
+                            Console.WriteLine($"[calendar.txt] {svcId} => {newId} (feed {fileIndex}, row changed)");
+                        }
+                        else
+                        {
+                            dataFiles[fileName].Add(parts);
+                        }
+                    }
+                }
+            }
+        }
+
+        // ----------------------------------------------------------------
+        // CALENDAR_DATES => if fileIndex=1 => no rename, else rename if row changed
+        // Also update references if service_id was renamed in calendar
+        // ----------------------------------------------------------------
+        private void ProcessCalendarDates(string[] lines, string fileName, bool isFirstFile, int fileIndex)
+        {
+            int svcIdx = -1;
+
+            if (isFirstFile && lines.Length > 0)
+            {
+                var header = lines[0].Split(',');
+                dataFiles[fileName].Add(header);
+                svcIdx = Array.IndexOf(header, "service_id");
+            }
+            else
+            {
+                var existingHeader = dataFiles[fileName][0];
+                svcIdx = Array.IndexOf(existingHeader, "service_id");
+            }
+
+            for (int i = (isFirstFile ? 1 : 0); i < lines.Length; i++)
+            {
+                if (i == 0 && !isFirstFile)
+                    continue;
+
+                var parts = lines[i].Split(',');
+                if (svcIdx < 0 || svcIdx >= parts.Length)
+                {
+                    dataFiles[fileName].Add(parts);
+                    continue;
+                }
+
+                string oldId = parts[svcIdx];
+                if (string.IsNullOrEmpty(oldId))
+                {
+                    dataFiles[fileName].Add(parts);
+                    continue;
+                }
+
+                // If calendar renamed it, we update
+                if (renamedServiceIds.ContainsKey(oldId))
+                {
+                    string renameTo = renamedServiceIds[oldId];
+                    parts[svcIdx] = renameTo;
+                    dataFiles[fileName].Add(parts);
+                    Console.WriteLine($"[calendar_dates.txt] updating {oldId} => {renameTo} (due to prior rename in calendar)");
+                    continue;
+                }
+
+                // Build fingerprint ignoring svcIdx
+                string fp = BuildFingerprint(parts, svcIdx);
+
+                if (!knownServiceFingerprints.ContainsKey(oldId))
+                {
+                    knownServiceFingerprints[oldId] = fp;
+                    dataFiles[fileName].Add(parts);
+                }
+                else
+                {
+                    if (fileIndex == 1)
+                    {
+                        dataFiles[fileName].Add(parts);
+                    }
+                    else
+                    {
+                        var oldFp = knownServiceFingerprints[oldId];
+                        if (fp != oldFp)
+                        {
+                            string newId = oldId + "_Merged_" + fileIndex;
+                            parts[svcIdx] = newId;
+                            dataFiles[fileName].Add(parts);
+
+                            knownServiceFingerprints[newId] = fp;
+                            renamedServiceIds[oldId] = newId;
+                            Console.WriteLine($"[calendar_dates.txt] {oldId} => {newId} (feed {fileIndex}, row changed)");
+                        }
+                        else
+                        {
+                            dataFiles[fileName].Add(parts);
+                        }
+                    }
+                }
+            }
+        }
+
+        // ----------------------------------------------------------------
+        // ROUTES => skip duplicates by route_id
+        // ----------------------------------------------------------------
+        private void ProcessRoutes(string[] lines, string fileName, bool isFirstFile)
+        {
+            int routeIdIndex = -1;
+            if (isFirstFile && lines.Length > 0)
+            {
+                var header = lines[0].Split(',');
+                dataFiles[fileName].Add(header);
+                routeIdIndex = Array.IndexOf(header, "route_id");
+            }
+            else
+            {
+                var existingHeader = dataFiles[fileName][0];
+                routeIdIndex = Array.IndexOf(existingHeader, "route_id");
+            }
+
+            for (int i = (isFirstFile ? 1 : 0); i < lines.Length; i++)
+            {
+                if (i == 0 && !isFirstFile)
+                    continue;
+
+                var parts = lines[i].Split(',');
+                if (routeIdIndex >= 0 && routeIdIndex < parts.Length)
+                {
+                    string rid = parts[routeIdIndex];
+                    if (!string.IsNullOrEmpty(rid) && !seenRouteIds.Contains(rid))
+                    {
+                        dataFiles[fileName].Add(parts);
+                        seenRouteIds.Add(rid);
+                    }
+                    else
+                    {
+                        // skip dup
+                    }
+                }
+                else
+                {
                     dataFiles[fileName].Add(parts);
                 }
             }
         }
 
-        /// <summary>
-        /// stop_times.txt logic: if a stop_id was renamed in this feed, we update the reference.
-        /// e.g., if oldStopId -> newStopId, we replace it in each row.
-        /// </summary>
-        private void ProcessStopTimesFile(string[] lines, string fileName, bool isFirstFile)
+        // ----------------------------------------------------------------
+        // STOP_TIMES => update references if stop was renamed
+        // ----------------------------------------------------------------
+        private void ProcessStopTimes(string[] lines, string fileName, bool isFirstFile)
         {
-            int stopIdColIndex = -1;
-
+            int stopIdx = -1;
             if (isFirstFile && lines.Length > 0)
             {
-                var headerParts = lines[0].Split(',');
-                dataFiles[fileName].Add(headerParts);
-                stopIdColIndex = Array.IndexOf(headerParts, "stop_id");
+                var header = lines[0].Split(',');
+                dataFiles[fileName].Add(header);
+                stopIdx = Array.IndexOf(header, "stop_id");
             }
             else
             {
-                var existingHeader = dataFiles[fileName][0];
-                stopIdColIndex = Array.IndexOf(existingHeader, "stop_id");
+                var existing = dataFiles[fileName][0];
+                stopIdx = Array.IndexOf(existing, "stop_id");
             }
 
             for (int i = (isFirstFile ? 1 : 0); i < lines.Length; i++)
@@ -350,83 +466,106 @@ namespace GTFS_Correction
                     continue;
 
                 var parts = lines[i].Split(',');
-
-                // If we have a stop_id column:
-                if (stopIdColIndex >= 0 && stopIdColIndex < parts.Length)
+                if (stopIdx >= 0 && stopIdx < parts.Length)
                 {
-                    string oldStopId = parts[stopIdColIndex];
-
-                    // Check if we have a renamed ID for this feed
+                    string oldStopId = parts[stopIdx];
                     if (!string.IsNullOrEmpty(oldStopId) && renamedStopIds.ContainsKey(oldStopId))
                     {
-                        parts[stopIdColIndex] = renamedStopIds[oldStopId];
+                        string newId = renamedStopIds[oldStopId];
+                        parts[stopIdx] = newId;
+                        Console.WriteLine($"[stop_times.txt] {oldStopId} => {newId}");
                     }
                 }
-
                 dataFiles[fileName].Add(parts);
             }
         }
 
-        /// <summary>
-        /// Writes the merged data to .txt files in the specified output directory.
-        /// Removes discrepancy.txt if it exists in that directory.
-        /// </summary>
-        /// <param name="outputDirectory">Path to the folder where .txt files are written.</param>
-        public void WriteMergedFiles(string outputDirectory)
+        // ----------------------------------------------------------------
+        // TRIPS => update references if service_id was renamed
+        // ----------------------------------------------------------------
+        private void ProcessTrips(string[] lines, string fileName, bool isFirstFile)
         {
-            foreach (var kvp in dataFiles)
+            int svcIdx = -1;
+            if (isFirstFile && lines.Length > 0)
             {
-                string fileName = kvp.Key;
-                List<string[]> rows = kvp.Value;
-
-                string outputFilePath = Path.Combine(outputDirectory, fileName);
-                File.WriteAllLines(outputFilePath, rows.Select(line => string.Join(",", line)));
+                var header = lines[0].Split(',');
+                dataFiles[fileName].Add(header);
+                svcIdx = Array.IndexOf(header, "service_id");
+            }
+            else
+            {
+                var existing = dataFiles[fileName][0];
+                svcIdx = Array.IndexOf(existing, "service_id");
             }
 
-            // Remove discrepancy.txt if it exists
-            string discrepancyFilePath = Path.Combine(outputDirectory, "discrepancy.txt");
-            if (File.Exists(discrepancyFilePath))
+            for (int i = (isFirstFile ? 1 : 0); i < lines.Length; i++)
             {
-                File.Delete(discrepancyFilePath);
+                if (i == 0 && !isFirstFile)
+                    continue;
+
+                var parts = lines[i].Split(',');
+                if (svcIdx >= 0 && svcIdx < parts.Length)
+                {
+                    string oldId = parts[svcIdx];
+                    if (!string.IsNullOrEmpty(oldId) && renamedServiceIds.ContainsKey(oldId))
+                    {
+                        string newId = renamedServiceIds[oldId];
+                        parts[svcIdx] = newId;
+                        Console.WriteLine($"[trips.txt] {oldId} => {newId}");
+                    }
+                }
+                dataFiles[fileName].Add(parts);
             }
         }
 
-        /// <summary>
-        /// Zips only the required GTFS files from the given directory into a new zip.
-        /// </summary>
-        /// <param name="directoryPath">Path to folder containing the merged .txt files.</param>
-        /// <param name="zipFilePath">Where to create the final zip.</param>
+        // ----------------------------------------------------------------
+        // BuildFingerprint => skip the ID column, join the rest
+        // ----------------------------------------------------------------
+        private string BuildFingerprint(string[] row, int ignoreIndex)
+        {
+            return string.Join("|", row.Where((_, i) => i != ignoreIndex));
+        }
+
+        // ----------------------------------------------------------------
+        // Write & Zip
+        // ----------------------------------------------------------------
+        public void WriteMergedFiles(string outDir)
+        {
+            foreach (var kvp in dataFiles)
+            {
+                string fn = kvp.Key;
+                var rows = kvp.Value;
+                string path = Path.Combine(outDir, fn);
+                File.WriteAllLines(path, rows.Select(r => string.Join(",", r)));
+            }
+
+            string disc = Path.Combine(outDir, "discrepancy.txt");
+            if (File.Exists(disc)) File.Delete(disc);
+        }
+
         public void ZipMergedFiles(string directoryPath, string zipFilePath)
         {
             try
             {
-                // List the standard GTFS files we expect to zip
-                string[] requiredFiles = new string[]
-                {
-                    "agency.txt", "calendar.txt", "calendar_dates.txt", "feed_info.txt",
-                    "routes.txt", "shapes.txt", "stop_times.txt", "stops.txt", "trips.txt"
+                string[] requiredFiles = {
+                    "agency.txt","calendar.txt","calendar_dates.txt","feed_info.txt",
+                    "routes.txt","shapes.txt","stop_times.txt","stops.txt","trips.txt"
                 };
 
-                // Create a temporary directory to store the zip
-                string tempZipDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-                Directory.CreateDirectory(tempZipDirectory);
+                string tempZipDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+                Directory.CreateDirectory(tempZipDir);
 
-                // Copy only required files into the temp directory
-                foreach (var fileName in requiredFiles)
+                foreach (var fn in requiredFiles)
                 {
-                    string sourceFilePath = Path.Combine(directoryPath, fileName);
-                    if (File.Exists(sourceFilePath))
+                    string src = Path.Combine(directoryPath, fn);
+                    if (File.Exists(src))
                     {
-                        string destPath = Path.Combine(tempZipDirectory, fileName);
-                        File.Copy(sourceFilePath, destPath);
+                        string dst = Path.Combine(tempZipDir, fn);
+                        File.Copy(src, dst);
                     }
                 }
-
-                // Create the zip from temp directory
-                ZipFile.CreateFromDirectory(tempZipDirectory, zipFilePath);
-
-                // Clean up
-                Directory.Delete(tempZipDirectory, true);
+                ZipFile.CreateFromDirectory(tempZipDir, zipFilePath);
+                Directory.Delete(tempZipDir, true);
             }
             catch (Exception ex)
             {

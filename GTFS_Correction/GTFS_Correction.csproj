@@ -4,7 +4,15 @@
     <TargetFramework>net481</TargetFramework>
     <UseWPF>false</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
-    <Company>Open Innovation Plans, LLC</Company>
+    <Company>Broward County Transit</Company>
+	
+
+    <Product>GTFS Correction Tool</Product>
+    <AssemblyVersion>1.0.0.2</AssemblyVersion>
+    <FileVersion>1.0.0.2</FileVersion>
+    <InformationalVersion>1.0.2</InformationalVersion>
+    <Description>This application was developed for Broward County Transit.</Description>
+	
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="DotSpatial.Data" Version="3.0.1" />
@@ -18,5 +26,18 @@
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.118" />
     <PackageReference Include="System.IO.Compression" Version="4.3.0" />
     <PackageReference Include="System.IO.Compression.ZipFile" Version="4.3.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Properties\Settings.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
   </ItemGroup>
 </Project>
