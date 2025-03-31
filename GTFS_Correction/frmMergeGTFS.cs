@@ -13,7 +13,7 @@ namespace GTFS_Correction
         public frmMergeGTFS()
         {
             InitializeComponent();
-            gtfsFiles = new List<string>();  // Initialize the list
+            gtfsFiles = new List<string>();
         }
 
         private void btnAddGTFS_Click(object sender, EventArgs e)
@@ -27,8 +27,8 @@ namespace GTFS_Correction
                 {
                     foreach (var fileName in openFileDialog.FileNames)
                     {
-                        gtfsFiles.Add(fileName);  // Add to list
-                        lstGTFSFiles.Items.Add(fileName);  // Add to list box in UI
+                        gtfsFiles.Add(fileName);
+                        lstGTFSFiles.Items.Add(fileName);
                     }
                 }
             }
@@ -40,12 +40,12 @@ namespace GTFS_Correction
             {
                 if (folderDialog.ShowDialog() == DialogResult.OK)
                 {
-                    string outputDirectory = folderDialog.SelectedPath;
+                    string baseOutputDirectory = folderDialog.SelectedPath;
 
-                    // Validate the directory name
-                    if (string.IsNullOrEmpty(outputDirectory) || !Directory.Exists(outputDirectory))
+                    if (string.IsNullOrEmpty(baseOutputDirectory) || !Directory.Exists(baseOutputDirectory))
                     {
-                        MessageBox.Show("The selected directory is invalid. Please choose a valid directory.", "Invalid Directory", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("The selected directory is invalid. Please choose a valid directory.",
+                                        "Invalid Directory", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     }
 
@@ -53,62 +53,63 @@ namespace GTFS_Correction
                     {
                         GTFSFileMerger fileMerger = new GTFSFileMerger();
 
-                        // Load all GTFS files into memory with their respective indices
+                        // 1) Load all GTFS files
                         for (int i = 0; i < gtfsFiles.Count; i++)
                         {
                             string filePath = gtfsFiles[i];
-                            // Ensure the file path is valid and log it for debugging
                             if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
                             {
-                                MessageBox.Show($"The file path '{filePath}' is invalid. Please check the input files.", "Invalid File Path", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                MessageBox.Show($"The file '{filePath}' is invalid.", "Invalid File",
+                                                MessageBoxButtons.OK, MessageBoxIcon.Error);
                                 return;
                             }
 
-                            // Log or Debug output path for validation
-                            Console.WriteLine($"Loading GTFS file: {filePath}");
-
-                            fileMerger.LoadGTFSFile(filePath, i + 1); // Provide both filePath and fileIndex
+                            // Provide the path to the merger so it can log
+                            fileMerger.LoadGTFSFile(filePath, i + 1);
                         }
 
-                        // Write the merged files to the output directory
-                        fileMerger.WriteMergedFiles(outputDirectory);
-
-                        // Zip the merged files in the output directory
+                        // 2) Create subfolder name from the .zip
                         string zipFileName = $"BCT_GTFS_Merged_{DateTime.Now:yyyyMMdd_HHmmss}.zip";
-                        string zipFilePath = Path.Combine(outputDirectory, zipFileName);
+                        string baseName = Path.GetFileNameWithoutExtension(zipFileName);
+                        if (string.IsNullOrEmpty(baseName)) baseName = "MergedFeed";
 
-                        fileMerger.ZipMergedFiles(outputDirectory, zipFilePath);
+                        string finalFolder = Path.Combine(baseOutputDirectory, baseName);
+                        int suffix = 1;
+                        while (Directory.Exists(finalFolder))
+                        {
+                            finalFolder = Path.Combine(baseOutputDirectory, $"{baseName}_{suffix}");
+                            suffix++;
+                        }
+                        Directory.CreateDirectory(finalFolder);
 
-                        MessageBox.Show("GTFS files merged and zipped successfully.", "Merge Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        // 3) Write merged .txt into finalFolder
+                        fileMerger.WriteMergedFiles(finalFolder);
+
+                        // 4) Create a merge_log.txt listing the final .txt details
+                        //    PLUS the raw lines from each feed
+                        fileMerger.CreateLogFile(finalFolder);
+
+                        // 5) Zip that folder in-place
+                        string zipFilePath = Path.Combine(finalFolder, zipFileName);
+                        fileMerger.ZipMergedFiles(finalFolder, zipFilePath);
+
+                        MessageBox.Show("GTFS files merged, log created, and zipped successfully.",
+                                        "Merge Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"Error merging GTFS files: {ex.Message}", "Merge Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"Error merging GTFS files: {ex.Message}",
+                                        "Merge Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
                 else
                 {
-                    MessageBox.Show("No directory was selected. Please select a valid directory.", "No Directory Selected", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("No directory was selected. Please select a valid directory.",
+                                    "No Directory Selected",
+                                    MessageBoxButtons.OK,
+                                    MessageBoxIcon.Warning);
                 }
             }
-        }
-
-        private void MergeGTFSFiles(List<string> gtfsFiles, string outputDirectory)
-        {
-            var fileMerger = new GTFSFileMerger();  // Assuming you have a GTFSFileMerger class to handle the merging logic
-
-            // Load all GTFS files into memory
-            for (int i = 0; i < gtfsFiles.Count; i++)
-            {
-                string filePath = gtfsFiles[i];
-                fileMerger.LoadGTFSFile(filePath, i + 1); // Pass fileIndex as i+1 to ensure unique indexing starts from 1
-            }
-
-            // Perform the merging
-           // fileMerger.MergeFiles();
-
-            // Write the merged files to the output directory
-            fileMerger.WriteMergedFiles(outputDirectory);
         }
 
         private void BtnRemoveSelected_Click(object sender, EventArgs e)
