@@ -576,7 +576,7 @@
         "runtime": {
           "GTFS_Correction.exe": {
             "assemblyVersion": "1.0.0",
-            "fileVersion": "1.0.0.2"
+            "fileVersion": "1.0.0.3"
           }
         }
       }
