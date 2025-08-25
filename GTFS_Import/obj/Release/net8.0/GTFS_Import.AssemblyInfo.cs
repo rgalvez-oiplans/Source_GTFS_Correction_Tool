@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GTFS_Import")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a1afae2834b9d80eddc247369bfee13f25d08718")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+05649829c482a25b4773732fbd8d8275cb19a407")]
 [assembly: System.Reflection.AssemblyProductAttribute("GTFS_Import")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GTFS_Import")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
